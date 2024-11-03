@@ -29,7 +29,7 @@ const listContacts = async () => {
 
 const getContactById = async (contactId) => {
   const contacts = await readContactsFile();
-  return contacts.find((contact) => contact.id === contactID) || null;
+  return contacts.find((contact) => contact.id === contactId) || null;
 };
 
 const removeContact = async (contactId) => {
@@ -40,7 +40,7 @@ const removeContact = async (contactId) => {
 
   const [removedContact] = contacts.splice(index, 1);
   await writeContactsFile(contacts);
-  return removeContact;
+  return removedContact;
 };
 
 const addContact = async (body) => {
