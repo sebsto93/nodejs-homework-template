@@ -1,66 +1,89 @@
-const { read } = require("fs");
-const fs = require("fs/promises");
-const path = require("path");
-const { v4: uuidv4 } = require("uuid");
+const { Schema, model } = require("mongoose");
 
-const contactsPath = path.join(__dirname, "contacts.json");
+const contactSchema = new Schema(
+  {
+    name: {
+      type: String,
+      required: true,
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    phone: {
+      type: String,
+      required: true,
+    },
+    favorite: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  { timestamps: true }
+);
 
-const readContactsFile = async () => {
+const Contact = model("Contact", contactSchema);
+
+const listContacts = async () => {
   try {
-    const data = await fs.readFile(contactsPath, "utf-8");
-    return JSON.parse(data);
+    return await Contact.find();
   } catch (error) {
-    console.error("Error reading contacts file:", error.message);
+    console.error("Error listing contacts:", error.message);
     return [];
   }
 };
 
-const writeContactsFile = async (contacts) => {
+const getContactById = async (contactId) => {
   try {
-    await fs.writeFile(contactsPath, JSON.stringify(contacts, null, 2));
+    return await Contact.findById(contactId);
   } catch (error) {
-    console.error("Error writing contacts file:", error.message);
+    console.error("Error getting contact by id:", error.message);
+    return null;
   }
 };
 
-const listContacts = async () => {
-  return await readContactsFile();
-};
-
-const getContactById = async (contactId) => {
-  const contacts = await readContactsFile();
-  return contacts.find((contact) => contact.id === contactId) || null;
-};
-
 const removeContact = async (contactId) => {
-  const contacts = await readContactsFile();
-  const index = contacts.findIndex((contact) => contact.id === contactId);
-
-  if (index === -1) return null;
-
-  const [removedContact] = contacts.splice(index, 1);
-  await writeContactsFile(contacts);
-  return removedContact;
+  try {
+    return await Contact.findByIdAndRemove(contactId);
+  } catch (error) {
+    console.error("Error removing contact:", error.message);
+    return null;
+  }
 };
 
 const addContact = async (body) => {
-  const contacts = await readContactsFile();
-  const newContact = { id: uuidv4(), ...body };
-
-  contacts.push(newContact);
-  await writeContactsFile(contacts);
-  return newContact;
+  try {
+    const newContact = new Contact(body);
+    await newContact.save();
+    return newContact;
+  } catch (error) {
+    console.error("Error adding contact:", error.message);
+    return null;
+  }
 };
 
 const updateContact = async (contactId, body) => {
-  const contacts = await readContactsFile();
-  const index = contacts.findIndex((contact) => contact.id === contactId);
+  try {
+    return await Contact.findByIdAndUpdate(contactId, body, { new: true });
+  } catch (error) {
+    console.error("Error updating contact:", error.message);
+    return null;
+  }
+};
 
-  if (index === -1) return null;
-
-  contacts[index] = { ...contacts[index], ...body };
-  await writeContactsFile(contacts);
-  return contacts[index];
+const updateStatusContact = async (contactId, { favorite }) => {
+  try {
+    const updatedContact = await Contact.findByIdAndUpdate(
+      contactId,
+      { favorite },
+      { new: true }
+    );
+    return updatedContact;
+  } catch (error) {
+    console.error("Error updating contact status:", error.message);
+    return null;
+  }
 };
 
 module.exports = {
@@ -69,4 +92,5 @@ module.exports = {
   removeContact,
   addContact,
   updateContact,
+  updateStatusContact,
 };
