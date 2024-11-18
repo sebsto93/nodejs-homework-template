@@ -2,20 +2,15 @@ const express = require("express");
 const logger = require("morgan");
 const cors = require("cors");
 const mongoose = require("mongoose");
+const connectDB = require("./db");
 
 const contactsRouter = require("./routes/api/contacts");
 
 const app = express();
 
-const mongoURI =
-  "mongodb+srv://sstobiecki93:123abc123@cluster0.v3nhz.mongodb.net/db-contacts";
-
-mongoose
-  .connect(mongoURI)
-  .then(() => console.log("MongoDB connected successfully"))
-  .catch((err) => console.error("MongoDB connection error:", err));
-
 const formatsLogger = app.get("env") === "development" ? "dev" : "short";
+
+connectDB();
 
 app.use(logger(formatsLogger));
 app.use(cors());
