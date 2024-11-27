@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const contacts = require("../../models/contacts");
 const Joi = require("joi");
+const authMiddleware = require("../../middleware/authMiddleware"); 
 
 const contactSchema = Joi.object({
   name: Joi.string().required(),
@@ -9,16 +10,30 @@ const contactSchema = Joi.object({
   phone: Joi.string().pattern(/^\d+$/).required(),
 });
 
-router.get("/", async (req, res, next) => {
+router.get("/", authMiddleware, async (req, res, next) => {
   try {
-    const allContacts = await contacts.listContacts();
+    const { page = 1, limit = 20, favorite } = req.query;
+
+    const pageNumber = parseInt(page, 10);
+    const limitNumber = parseInt(limit, 10);
+
+    if (pageNumber < 1 || limitNumber < 1) {
+      return res.status(400).json({ message: "Invalid page or limit values" });
+    }
+
+    const skip = (pageNumber - 1) * limitNumber;
+
+    const filter = favorite ? { favorite: favorite === "true" } : {};
+
+    const allContacts = await contacts.listContacts(filter, skip, limitNumber);
+
     res.status(200).json(allContacts);
   } catch (error) {
     next(error);
   }
 });
 
-router.get("/:contactId", async (req, res, next) => {
+router.get("/:contactId", authMiddleware, async (req, res, next) => {
   try {
     const { contactId } = req.params;
     const contact = await contacts.getContactById(contactId);
@@ -31,7 +46,7 @@ router.get("/:contactId", async (req, res, next) => {
   }
 });
 
-router.post("/", async (req, res, next) => {
+router.post("/", authMiddleware, async (req, res, next) => {
   try {
     const { error } = contactSchema.validate(req.body);
     if (error) {
@@ -47,7 +62,7 @@ router.post("/", async (req, res, next) => {
   }
 });
 
-router.delete("/:contactId", async (req, res, next) => {
+router.delete("/:contactId", authMiddleware, async (req, res, next) => {
   try {
     const { contactId } = req.params;
     const result = await contacts.removeContact(contactId);
@@ -60,7 +75,7 @@ router.delete("/:contactId", async (req, res, next) => {
   }
 });
 
-router.put("/:contactId", async (req, res, next) => {
+router.put("/:contactId", authMiddleware, async (req, res, next) => {
   try {
     const { error } = contactSchema.validate(req.body);
     if (error) {
@@ -80,7 +95,7 @@ router.put("/:contactId", async (req, res, next) => {
   }
 });
 
-router.patch("/:contactId/favorite", async (req, res, next) => {
+router.patch("/:contactId/favorite", authMiddleware, async (req, res, next) => {
   try {
     const { contactId } = req.params;
     const { favorite } = req.body;

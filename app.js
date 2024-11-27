@@ -1,8 +1,11 @@
+require("dotenv").config();
+
 const express = require("express");
 const logger = require("morgan");
 const cors = require("cors");
 const mongoose = require("mongoose");
 const connectDB = require("./db");
+const authRoutes = require("./routes/auth");
 
 const contactsRouter = require("./routes/api/contacts");
 
@@ -15,6 +18,8 @@ connectDB();
 app.use(logger(formatsLogger));
 app.use(cors());
 app.use(express.json());
+
+app.use("/users", authRoutes);
 
 app.use("/api/contacts", contactsRouter);
 

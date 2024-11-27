@@ -10,14 +10,21 @@ const contactSchema = new Schema(
       type: String,
       required: true,
       unique: true,
+      match: [/^\S+@\S+\.\S+$/, "Invalid email format"], // Walidacja email
     },
     phone: {
       type: String,
       required: true,
+      match: [/^\+?[0-9\s-]+$/, "Invalid phone number"], // Walidacja numeru
     },
     favorite: {
       type: Boolean,
       default: false,
+    },
+    owner: {
+      type: Schema.Types.ObjectId,
+      ref: "user",
+      required: true,
     },
   },
   { timestamps: true }
@@ -25,65 +32,37 @@ const contactSchema = new Schema(
 
 const Contact = model("Contact", contactSchema);
 
-const listContacts = async () => {
+const listContacts = async (filter = {}, skip = 0, limit = 20) => {
   try {
-    return await Contact.find();
+    return await Contact.find(filter).skip(skip).limit(limit);
   } catch (error) {
-    console.error("Error listing contacts:", error.message);
-    return [];
+    throw error;
   }
 };
-
-const getContactById = async (contactId) => {
-  try {
-    return await Contact.findById(contactId);
-  } catch (error) {
-    console.error("Error getting contact by id:", error.message);
-    return null;
-  }
+const getContactById = async (contactId, owner) => {
+  return await Contact.findOne({ _id: contactId, owner });
 };
 
-const removeContact = async (contactId) => {
-  try {
-    return await Contact.findByIdAndRemove(contactId);
-  } catch (error) {
-    console.error("Error removing contact:", error.message);
-    return null;
-  }
+const removeContact = async (contactId, owner) => {
+  return await Contact.findOneAndRemove({ _id: contactId, owner });
 };
 
-const addContact = async (body) => {
-  try {
-    const newContact = new Contact(body);
-    await newContact.save();
-    return newContact;
-  } catch (error) {
-    console.error("Error adding contact:", error.message);
-    return null;
-  }
+const addContact = async (body, owner) => {
+  return await Contact.create({ ...body, owner });
 };
 
-const updateContact = async (contactId, body) => {
-  try {
-    return await Contact.findByIdAndUpdate(contactId, body, { new: true });
-  } catch (error) {
-    console.error("Error updating contact:", error.message);
-    return null;
-  }
+const updateContact = async (contactId, body, owner) => {
+  return await Contact.findOneAndUpdate({ _id: contactId, owner }, body, {
+    new: true,
+  });
 };
 
-const updateStatusContact = async (contactId, { favorite }) => {
-  try {
-    const updatedContact = await Contact.findByIdAndUpdate(
-      contactId,
-      { favorite },
-      { new: true }
-    );
-    return updatedContact;
-  } catch (error) {
-    console.error("Error updating contact status:", error.message);
-    return null;
-  }
+const updateStatusContact = async (contactId, { favorite }, owner) => {
+  return await Contact.findOneAndUpdate(
+    { _id: contactId, owner },
+    { favorite },
+    { new: true }
+  );
 };
 
 module.exports = {
@@ -93,4 +72,5 @@ module.exports = {
   addContact,
   updateContact,
   updateStatusContact,
+  Contact,
 };
