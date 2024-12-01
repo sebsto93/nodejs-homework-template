@@ -6,6 +6,7 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 const connectDB = require("./db");
 const authRoutes = require("./routes/auth");
+const path = require("path");
 
 const contactsRouter = require("./routes/api/contacts");
 
@@ -15,6 +16,7 @@ const formatsLogger = app.get("env") === "development" ? "dev" : "short";
 
 connectDB();
 
+app.use(express.static(path.join(__dirname, "public")));
 app.use(logger(formatsLogger));
 app.use(cors());
 app.use(express.json());
