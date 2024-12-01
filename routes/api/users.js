@@ -2,6 +2,8 @@ const express = require("express");
 const router = express.Router();
 const authMiddleware = require("../../middleware/authMiddleware");
 const User = require("../../models/user");
+const { updateAvatar } = require("../controllers/users");
+const upload = require("../middleware/upload");
 
 router.get("/logout", authMiddleware, async (req, res, next) => {
   try {
@@ -38,5 +40,7 @@ router.get("/current", authMiddleware, async (req, res, next) => {
     next(error);
   }
 });
+
+router.patch("/avatars", authMiddleware, upload.single("avatar"), updateAvatar);
 
 module.exports = router;
