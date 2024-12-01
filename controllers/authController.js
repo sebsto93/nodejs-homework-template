@@ -77,10 +77,49 @@ const login = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+const logout = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    const user = await User.findByIdAndUpdate(userId, { token: null });
+    if (!user) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
+
+    res.status(204).send();
+  } catch (error) {
+    console.error("Error during logout:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const getCurrent = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
+
+    res.status(200).json({
+      email: user.email,
+      subscription: user.subscription,
+    });
+  } catch (error) {
+    console.error("Error fetching current user:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 const updateSubscription = async (req, res) => {
   const { subscription } = req.body;
 
   const validSubscriptions = ["starter", "pro", "business"];
+  if (!subscription) {
+    return res.status(400).json({ message: "Subscription is required" });
+  }
   if (!validSubscriptions.includes(subscription)) {
     return res.status(400).json({ message: "Invalid subscription value" });
   }
@@ -105,4 +144,4 @@ const updateSubscription = async (req, res) => {
   }
 };
 
-module.exports = { signup, login, updateSubscription };
+module.exports = { signup, login, updateSubscription, logout, getCurrent };
