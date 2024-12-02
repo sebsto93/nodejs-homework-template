@@ -82,8 +82,6 @@ const login = async (req, res) => {
   }
 };
 
-<<<<<<< HEAD
-=======
 const logout = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -119,7 +117,6 @@ const getCurrent = async (req, res) => {
   }
 };
 
->>>>>>> 31da289fd8765fd6aebc5738359a5cc1e5b08289
 const updateSubscription = async (req, res) => {
   const { subscription } = req.body;
 
