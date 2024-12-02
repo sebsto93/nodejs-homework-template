@@ -6,15 +6,10 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 const connectDB = require("./db");
 const authRoutes = require("./routes/auth");
-
 const path = require("path");
-
-const userRoutes = require("./routes/api/users");
-
+const usersRouter = require("./routes/api/users");
 const contactsRouter = require("./routes/api/contacts");
-
 const app = express();
-
 const formatsLogger = app.get("env") === "development" ? "dev" : "short";
 
 connectDB();
@@ -25,7 +20,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use("/api/auth", authRoutes);
-app.use("/api/users", userRoutes);
+app.use("/api/users", usersRouter);
 app.use("/api/contacts", contactsRouter);
 
 app.use((req, res) => {
