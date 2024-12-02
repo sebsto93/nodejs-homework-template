@@ -2,8 +2,8 @@ const express = require("express");
 const router = express.Router();
 const authMiddleware = require("../../middleware/authMiddleware");
 const User = require("../../models/user");
-const { updateAvatar } = require("../controllers/users");
-const upload = require("../middleware/upload");
+const { updateAvatar } = require("../../controllers/users");
+const upload = require("../../middleware/upload");
 
 router.get("/logout", authMiddleware, async (req, res, next) => {
   try {
