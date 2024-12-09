@@ -2,39 +2,56 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/user");
 const gravatar = require("gravatar");
+const uuid = require("uuid");
+const sgMail = require("@sendgrid/mail");
+
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 const signup = async (req, res) => {
-  const { email, password } = req.body;
-
   try {
+    const { email, password } = req.body;
+
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(409).json({ message: "Email in use" });
     }
 
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    const hashedPassword = await bcrypt.hash(password, 10);
     const avatarURL = gravatar.url(email, { s: "250", d: "retro" }, true);
+
+    const verificationToken = uuid.v4();
 
     const newUser = new User({
       email,
       password: hashedPassword,
       subscription: "starter",
       avatarURL,
+      verificationToken,
     });
+
     await newUser.save();
+
+    const verificationLink = `${process.env.BASE_URL}/api/users/verify/${verificationToken}`;
+    const msg = {
+      to: email,
+      from: process.env.SENDER_EMAIL,
+      subject: "Verify your email",
+      html: `<p>To verify your email, click the link below:</p>
+             <a href="${verificationLink}">Verify Email</a>`,
+    };
+
+    await sgMail.send(msg);
 
     res.status(201).json({
       user: {
         email: newUser.email,
         subscription: newUser.subscription,
-        avatarURL,
+        avatarURL: newUser.avatarURL,
       },
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Failed to save user", error: error.message });
+    console.error("Error during user registration:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
@@ -148,4 +165,69 @@ const updateSubscription = async (req, res) => {
   }
 };
 
-module.exports = { signup, login, updateSubscription, logout, getCurrent };
+const verifyEmail = async (req, res) => {
+  const { verificationToken } = req.params;
+
+  try {
+    const user = await User.findOne({ verificationToken });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    user.verify = true;
+    user.verificationToken = null;
+    await user.save();
+
+    res.status(200).json({ message: "Verification successful" });
+  } catch (error) {
+    console.error("Error during email verification:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const resendVerificationEmail = async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ message: "Email is required" });
+  }
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user.verify) {
+      return res
+        .status(400)
+        .json({ message: "Verification has already been passed" });
+    }
+
+    const verificationLink = `${process.env.BASE_URL}/api/users/verify/${user.verificationToken}`;
+    const msg = {
+      to: email,
+      from: process.env.SENDER_EMAIL,
+      subject: "Verify your email",
+      html: `<p>To verify your email, click the link below:</p>
+             <a href="${verificationLink}">Verify Email</a>`,
+    };
+
+    await sgMail.send(msg);
+
+    res.status(200).json({ message: "Verification email sent" });
+  } catch (error) {
+    console.error("Error during resending verification email:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+module.exports = {
+  signup,
+  login,
+  updateSubscription,
+  logout,
+  getCurrent,
+  verifyEmail,
+  resendVerificationEmail,
+};

@@ -4,6 +4,7 @@ const authMiddleware = require("../../middleware/authMiddleware");
 const User = require("../../models/user");
 const { updateAvatar } = require("../../controllers/users");
 const upload = require("../../middleware/upload");
+const { verifyUser } = require("../../controllers/users");
 
 router.get("/logout", authMiddleware, async (req, res, next) => {
   try {
@@ -42,5 +43,7 @@ router.get("/current", authMiddleware, async (req, res, next) => {
 });
 
 router.patch("/avatars", authMiddleware, upload.single("avatar"), updateAvatar);
+
+router.get("/verify/:verificationToken", verifyUser);
 
 module.exports = router;
