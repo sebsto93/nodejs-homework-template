@@ -10,6 +10,7 @@ const userSchema = new Schema({
     type: String,
     required: [true, "Email is required"],
     unique: true,
+    match: [/^\S+@\S+\.\S+$/, "Please enter a valid email address"],
   },
   subscription: {
     type: String,
@@ -22,6 +23,14 @@ const userSchema = new Schema({
   token: {
     type: String,
     default: null,
+  },
+  verify: {
+    type: Boolean,
+    default: false,
+  },
+  verificationToken: {
+    type: String,
+    required: [true, "Verify token is required"],
   },
 });
 
